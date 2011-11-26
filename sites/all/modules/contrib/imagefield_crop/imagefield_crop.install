@@ -1,0 +1,44 @@
+<?php
+// $Id: imagefield_crop.install,v 1.1.2.2 2009/09/13 11:33:22 yhager Exp $
+
+/**
+ * Upgrade to Drupal 6.
+ */
+function imagefield_crop_update_6000() {
+  // Make sure CCK's been updated first.
+  if ($abort = content_check_update('imagefield_crop')) {
+    return $abort;
+  }
+
+  module_load_include('inc', 'content', 'includes/content.admin');
+  module_load_include('inc', 'content', 'includes/content.crud');
+
+  $ret[] = update_sql("UPDATE {". content_instance_tablename() ."} SET widget_type = 'imagefield_crop_widget' WHERE widget_type = 'image crop'");
+  content_associate_fields('imagefield_crop');
+
+  content_clear_type_cache(TRUE);
+
+  return $ret;
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function imagefield_crop_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  
+  if ($phase == 'runtime') {
+    if (count(imageapi_get_available_toolkits()) == 0) {
+      $requirements['imagefield_crop_toolkits'] = array(
+        'title' => $t('Imagefield crop Toolkit'),
+        'value' => $t('No ImageAPI toolkits available'),
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $t('Imagefield crop requires a Toolkit such as ImageAPI GD or ImageAPI ImageMagick to function. Go to !modules and enable one of them.', array('!modules' => l('admin/build/modules', 'admin/build/modules'))),
+      );
+    }
+  }
+
+  return $requirements;
+}
+

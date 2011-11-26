@@ -1,0 +1,12 @@
+/* $Id: imagefield_crop.css,v 1.1.4.5 2010/03/04 19:12:36 yhager Exp $ */
+#node-form img.cropbox {
+  display: none;
+}
+
+#node-form div.jcrop-holder img.cropbox {
+  display: block;
+}
+
+.widget-edit {
+  clear: both;
+}

@@ -1,0 +1,79 @@
+<?php
+
+//hook_init
+function custom_lc_init() {
+//  drupal_add_js(drupal_get_path('module', 'info55') . '/js/info55.js');
+//  drupal_add_css(drupal_get_path('module', 'info55').'/css/info55.css');
+}
+/*
+ * Implementation of hook_block
+ */
+function custom_lc_block($op = 'list', $delta = 0, $edit = array()) {
+    if ($op == 'list') {
+        $blocks[0] = array('info' => t('Footer (custom_lc)'));
+//      'weight' => 0, 'status' => 1, 'region' => 'left');
+        return $blocks;
+    } else if ($op == 'view') {
+        switch ($delta) {
+            case 0:
+                $block = array(
+                    'content' => theme('footer_block', views_embed_view('news', 'block_1')),
+                    );
+                break;
+        }
+        return $block;
+    }
+}
+function custom_lc_yandex_share_buttons(){
+    return theme('yandex_share_buttons');
+}
+/*
+ * Implementation of hook_theme
+ */
+function custom_lc_theme($arg1) {
+    $path = drupal_get_path('module', 'custom_lc') . '/templates';
+    return array(
+        'footer_block' => array(
+            'arguments' => array(
+                'views_news' => $arg1,
+            //'content' => array('name' => NULL, 'cost' => NULL, 'filepath' => NULL),
+            ),
+            'path' => $path,
+            'template' => 'footer_block'
+        ),
+        'yandex_share_buttons' => array(
+            'arguments' => array(
+            //'content' => array('name' => NULL, 'cost' => NULL, 'filepath' => NULL),
+            ),
+            'path' => $path,
+            'template' => 'yandex_share_buttons'
+        ),
+    );
+}
+
+//function info55_menu() {
+//    $items = array();
+//    $items['test'] = array(
+//        'title' => t('Footer Block settings'),
+//        'description' => t('Administer settings related to the footer Block.'),
+//        'page callback' => 'test',
+////		'page arguments' => array('footer_admin_settings'),
+//        'access arguments' => array('access content'),
+//        'type' => MENU_NORMAL_ITEM,
+//    );
+//    $items['test_view/%'] = array(
+//        'title' => t('Footer Block settings'),
+//        'description' => t('Administer settings related to the footer Block.'),
+//        'page callback' => 'test_view',
+//        'page arguments' => array(1),
+//        'access arguments' => array('access content'),
+//        'type' => MENU_NORMAL_ITEM,
+//    );
+//    $items['about/contact'] = array(
+//        'title' => 'Контакты',
+//        'page callback' => 'about_mail_contact',
+//        'access arguments' => array('access content'),
+//        'type' => MENU_NORMAL_ITEM,
+//    );
+//    return $items;
+//}

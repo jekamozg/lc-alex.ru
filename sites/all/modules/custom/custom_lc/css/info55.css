@@ -1,0 +1,41 @@
+/*footer*/
+#footer {
+}
+
+div.footer-about {
+    margin-top: 20px;
+    text-align: justify;
+    width: 700px;
+    float: left;
+}
+div.footer-follow {
+    width: 200px;
+    float: right;
+}
+
+div.footer-1 {
+    width: 960px;
+    margin: 0 auto;
+}
+
+div#footer-main-1 {
+    height: 180px;
+    background: gainsboro;
+    border-top: 1px solid #CCC;
+}
+
+div#footer-main-2 {
+    overflow: hidden;
+    background: url(../images/f2_bg.gif) repeat-x #3F3F3F;
+    height: 158px;
+}
+
+div#footer-main-3 {
+    overflow: hidden;
+    height: 30px;
+    background: url(../images/f3_bg.gif) repeat-x #252525;
+}
+
+/*end footer*/
+
+

@@ -1,0 +1,5 @@
+name = Custom actions lc-alex.ru 
+description = Custom module by Evgeniy Davydov (davydov.evgeniy.ite@gmail.com)
+package = "-Custom-"
+core = 6.x
+project = "lc-alex.ru"

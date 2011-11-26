@@ -1,0 +1,717 @@
+<?php
+
+/**
+* Display help and module information
+* @param path which path of the site we're displaying help
+* @param arg array that holds the current path as would be returned from arg() function
+* @return help text for the path
+*/
+function ymaps_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case "admin/help#ymaps":
+      $output = '<p>'.  t("Using the Yandex Maps API") .'</p>';
+      break;
+  }
+  return $output;
+} // function ymaps_help
+
+
+/**
+* Valid permissions for this module
+* @return array An array of valid permissions for the our module
+*/
+
+function ymaps_perm() {
+  return array('see ymaps content', 'administer ymaps');
+} // function ymaps_perm()
+
+/*
+* Generate HTML with the Ymaps block
+* @param op the operation from the URL
+* @param delta offset
+* @returns block HTML 
+*/
+function ymaps_block($op='list', $delta = 0, $edit = array()) {
+     //parameter from multiblock module
+     if (!empty($edit['multiblock_delta']['#value'])) {     
+     $block_id = $edit['multiblock_delta']['#value'];
+     }
+     else {
+     $block_id = 0;
+     }
+  // listing of blocks, such as on the admin/block page
+  switch ($op)  {
+
+     case 'list' : 
+       $block[0]["info"] = t('Yandex map for current node');
+       return $block;
+     case 'view' :
+       if (arg(0)=='node' && is_numeric(arg(1))) {
+        $ov = ymaps_get_map_overlays(arg(1), variable_get('ymaps_block_showchilds'.$block_id,1),variable_get('ymaps_block_trackshow'.$block_id,1));
+       }
+
+       //for listing node (front page)
+       if (arg(0)=='node' && !is_numeric(arg(1)) && arg(1) != 'add') {
+       $result = pager_query(db_rewrite_sql('SELECT n.nid FROM {node} n WHERE n.promote = 1 AND n.status = 1 ORDER BY n.sticky DESC, n.created DESC'), variable_get('default_nodes_main', 10));	
+        //TODO replace this buggy code
+         $ov = array('placemarks' =>array(), 'tracks' => array(),);
+         while ($nd = db_fetch_array($result)) {
+         $curov = ymaps_get_map_overlays($nd['nid'], variable_get('ymaps_block_showchilds'.$block_id,1),variable_get('ymaps_block_trackshow'.$block_id,1));
+         $ov['placemarks'] = array_merge($ov['placemarks'],(array)$curov['placemarks']);
+         $ov['tracks'] = array_merge($ov['tracks'],(array)$curov['tracks']);
+         }
+       }
+        
+       $block_content = ' <div id="ymaps-map-' . $block_id . '" style="height:' . variable_get('ymaps_block_height'.$block_id,"400") . 'px; width:' . variable_get('ymaps_block_width'.$block_id,"100") . '%" ></div>';  
+       // check to see if there was any content before setting up
+       //  the block  
+       if ($block_content == '') {
+         return;
+       }
+       // set up the block  
+       ymaps_doheader();
+
+       drupal_add_js("$(document).ready(function(){ YMaps.load(ymapsinit($block_id));
+       " ._ymaps_map_settings($block_id,_ymaps_block_settings($block_id))." " . ymaps_tracks_show($block_id, $ov['tracks']) . " " .ymaps_markers_show($block_id,$ov['placemarks'])." 
+          });
+          ", 'inline', 'header', FALSE, FALSE, FALSE);
+        
+       $block['subject'] = t('Yandex map');  
+       $block['content'] = $block_content;
+       return $block;
+      case 'configure':
+        $form = array();
+      
+        $form['ymaps_block_height'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Default height of the map'),
+          '#default_value' => variable_get('ymaps_block_height'.$block_id, 400),
+          '#size' => 3,
+          '#maxlength' => 3,
+          '#description' => t("Default height of the map, pixels"),
+          '#required' => TRUE,
+          );
+        $form['ymaps_block_width'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Default width of the map'),
+          '#default_value' => variable_get('ymaps_block_width'.$block_id, 100),
+          '#size' => 3,
+          '#maxlength' => 3,
+          '#description' => t("Default width of the map, percent"),
+          '#required' => TRUE,
+          );
+        $form['ymaps_block_defcenter'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Default center of the map'),
+          '#default_value' => variable_get('ymaps_block_defcenter'.$block_id, '37.64,55.76'),
+          '#size' => 12,
+          '#maxlength' => 12,
+          '#description' => t("Default center of the map. Latitude and longitude in \"37.64,55.76\" format"),
+          '#required' => TRUE,
+          );
+           $form['mapelements'] = array(
+          '#type' => 'fieldset', 
+          '#title' => t('Elements of the map'), 
+          '#tree' => TRUE,
+          );
+        $form['mapelements']['ymaps_block_zoom'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Zoom control'),
+          '#default_value' => variable_get('ymaps_block_zoom'.$block_id, 1),
+          '#description' => t("Zoom control"),
+          );
+        $form['mapelements']['ymaps_block_toolbar'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Add toolbar'),
+          '#default_value' => variable_get('ymaps_block_toolbar'.$block_id, 1),
+          '#description' => t("Add toolbar"),
+          );
+        $form['mapelements']['ymaps_block_typecontrol'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Show types control'),
+          '#default_value' => variable_get('ymaps_block_typecontrol'.$block_id, 1),
+          '#description' => t("Show types control"),
+          );
+          $form['mapelements']['ymaps_block_minimap'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Add minimap'),
+          '#default_value' => variable_get('ymaps_block_minimap'.$block_id, 0),
+          '#description' => t("Add minimap"),
+        );
+        $form['mapelements']['ymaps_block_scaleline'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Add scaleline'),
+          '#default_value' => variable_get('ymaps_block_scaleline'.$block_id, 1),
+          '#description' => t("Add scaleline"),
+          );
+        $form['ymaps_block_showchilds'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Show childs node locations '),
+          '#default_value' => variable_get('ymaps_block_showchilds'.$block_id, 1),
+          '#description' => t("Show locations of the nodereference fields"),
+          );
+          $form['ymaps_block_showteaser'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Show teasers in balloons'),
+          '#default_value' => variable_get('ymaps_block_showteaser'.$block_id, 1),
+          '#description' => t("Show teasers in balloons"),
+          );
+          $form['tracksettings'] = array(
+          '#type' => 'fieldset', 
+          '#title' => t('Tracks settings'), 
+          '#tree' => TRUE,
+          );
+          $form['tracksettings']['trackshow'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Show tracks on the map'),
+            '#default_value' => variable_get('ymaps_block_trackshow'.$block_id, 1),
+            '#description' => t("Show tracks on the map (depends on trackfield module)"),
+          );
+          $form['tracksettings']['trackwidth'] = array(
+            '#type' => 'select', 
+            '#title' => t('Width of the track'), 
+            '#default_value' => variable_get('ymaps_block_trackwidth'.$block_id, 3),
+            '#options' => drupal_map_assoc(array(1,2,3,4,5)), 
+            '#description' => t('Width of the track, pixels'),
+          );
+          $form['tracksettings']['trackcolor'] = array(
+            '#type' => 'textfield', 
+            '#title' => t('Stroke color'), 
+            '#size' => 8, 
+            '#maxlength' => 8,
+            '#default_value' => variable_get('ymaps_block_trackcolor'.$block_id, 'ff0000'),
+            '#description' => t('Stroke color, RGBA in hex format'),
+          );
+
+       return $form;
+      case 'save':
+        variable_set('ymaps_block_height'.$block_id, $edit['ymaps_block_height']);
+        variable_set('ymaps_block_width'.$block_id, $edit['ymaps_block_width']);
+        variable_set('ymaps_block_defcenter'.$block_id, $edit['ymaps_block_defcenter']);
+        variable_set('ymaps_block_zoom'.$block_id, $edit['mapelements']['ymaps_block_zoom']);
+        variable_set('ymaps_block_toolbar'.$block_id, $edit['mapelements']['ymaps_block_toolbar']);
+        variable_set('ymaps_block_minimap'.$block_id, $edit['mapelements']['ymaps_block_minimap']);
+        variable_set('ymaps_block_scaleline'.$block_id, $edit['mapelements']['ymaps_block_scaleline']);
+        variable_set('ymaps_block_showchilds'.$block_id, $edit['ymaps_block_showchilds']);
+        variable_set('ymaps_block_showteaser'.$block_id, $edit['ymaps_block_showteaser']);
+        variable_set('ymaps_block_typecontrol'.$block_id, $edit['mapelements']['ymaps_block_typecontrol']);
+        variable_set('ymaps_block_trackwidth'.$block_id, $edit['tracksettings']['trackwidth']);
+        variable_set('ymaps_block_trackcolor'.$block_id, $edit['tracksettings']['trackcolor']);
+        variable_set('ymaps_block_trackshow'.$block_id, $edit['tracksettings']['trackshow']);
+        return;
+      //option for multiblock module
+      case mb_enabled:
+        return mb_enabled;
+  }
+} // end ymaps_block
+
+
+//get all objects for node
+// returns array od placemarks and tracks
+function ymaps_get_map_overlays ($nid, $childs = FALSE, $tracks = TRUE) {
+  $node = node_load($nid);
+  $curm = ymaps_get_node_markers($node);
+  if (!empty($curm)) {
+    $ll[] =  $curm;
+  }
+  if ($tracks) {
+    $tt = ymaps_get_node_tracks($node);
+  }
+  else {
+    $tt = array();
+  }
+  //checking for childs
+  if ($childs) {
+    $ll = _ymaps_get_child_markers($nid,$ll); 
+  }
+  return array('placemarks' => $ll, 'tracks' => $tt,);
+}
+
+
+
+//get block settings
+function _ymaps_block_settings ($blockid) {
+  $par['zoom'] = variable_get('ymaps_block_zoom'.$blockid,TRUE);
+  $par['toolbar'] = variable_get('ymaps_block_toolbar'.$blockid,TRUE);
+  $par['minimap'] = variable_get('ymaps_block_minimap'.$blockid,TRUE);
+  $par['scaleline'] = variable_get('ymaps_block_scaleline'.$blockid,TRUE);
+  $par['showteaser'] = variable_get('ymaps_block_showteaser'.$blockid,TRUE);
+  $par['typecontrol'] = variable_get('ymaps_block_typecontrol'.$blockid,TRUE);
+  $par['trackwidth'] = variable_get('ymaps_block_trackwidth'.$blockid,'3');
+  $par['trackcolor'] = variable_get('ymaps_block_trackcolor'.$blockid,'ff0000ff');
+  $par['defcenter'] = variable_get('ymaps_block_defcenter'.$blockid,'37.7,55.7');
+  return $par;
+}
+
+
+//check map settings and return JS string with them
+function _ymaps_map_settings ($id, $opts = array()) {
+  if ($opts['zoom']) {
+    $params['zoom'] = " ymapsmap['$id'].addControl(new YMaps.Zoom()); ";
+  }
+  if ($opts['toolbar']) {
+    $params['toolbar'] = " ymapsmap['$id'].addControl(new YMaps.ToolBar()); ";
+  }
+  if ($opts['minimap']) {
+    $params['minimap'] = " ymapsmap['$id'].addControl(new YMaps.MiniMap()); ";
+  }
+  if ($opts['scaleline']) {
+    $params['scaleline'] = " ymapsmap['$id'].addControl(new YMaps.ScaleLine()); ";
+  }
+  if ($opts['showteaser']) {
+    $params['balloon'] = " markoptions['$id'] = {hasBalloon: true, hasHint: true}; ";
+  }
+  else {
+    $params['balloon'] = " markoptions['$id'] = {hasBalloon: false, hasHint: true}; ";
+  }
+  if ($opts['typecontrol']) {
+    $params['typecontrol'] = " ymapsmap['$id'].addControl(new YMaps.TypeControl()); ";
+  }
+  if ($opts['defcenter']) {
+    $params['defcenter'] = 
+    " ymapsmap['$id'].setCenter(new YMaps.GeoPoint({$opts['defcenter']}), 3); ";
+  }
+  
+  $params['trackstyle'] = "trackstyles['$id'] = new YMaps.Style(); trackstyles['$id'].lineStyle = new YMaps.LineStyle(); ";
+  
+  if ($opts['trackwidth']) {
+    $params['trackstyle'] .= " trackstyles['$id'].lineStyle.strokeWidth = '{$opts['trackwidth']}'; ";
+  }
+  if ($opts['trackcolor']) {
+    $params['trackstyle'] .= " trackstyles['$id'].lineStyle.strokeColor = '{$opts['trackcolor']}'; ";
+  }
+  
+  $params['trackstyle'] .= " YMaps.Styles.add(\"tracks#$id\",trackstyles['$id']); ";
+ 
+  
+  return implode ("",$params);
+}
+
+
+/**
+ * Set up the HTML header for Ymaps.
+ * If you are going to include a custom JS file that extends Ymaps, you probabaly
+ * want to call this first to ensure that the core js files have been added.
+ */
+function ymaps_doheader() {
+  static $ymaps_initialized = FALSE;
+  if ($ymaps_initialized) {
+    return;
+  }
+  $ymaps_path = drupal_get_path('module', 'ymaps');
+  //drupal_add_css($ymaps_path .'/ymaps.css');
+  
+  drupal_set_html_head('
+  <meta http-equiv="X-UA-Compatible" content="IE=7"/>
+  <script src="http://api-maps.yandex.ru/1.0/?
+  loadByRequire=1&key=' . variable_get('ymaps_key','') . '" type="text/javascript"></script>
+ ');
+ 
+ drupal_add_js("
+ 
+ var ymapsmap = new Array();
+ var ymapsbound = new Array();
+ var ymapsgpoints = new Array();
+ var ymapspmarks = new Array();
+ var ymapstracks = new Array();
+ var balcontent = new Array();
+ var markoptions = new Array();
+ var iconstyles = new Array();
+ var trackstyles = new Array();
+ 
+ function ymapsinit (key) {
+ ymapsmap[key] = new YMaps.Map( document.getElementById('ymaps-map-'+key) );
+ ymapsmap[key].setCenter( new YMaps.GeoPoint(37.7,55.7), 3, YMaps.MapType.MAP );
+ 
+ };
+     " , 'inline', 'header', FALSE, FALSE, FALSE);
+     
+
+  $ymaps_initialized = TRUE;
+}
+
+
+/**
+Settings page for admin
+  */
+function ymaps_admin() {
+
+  $form['ymaps_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Key for Yandex API'),
+    '#default_value' => variable_get('ymaps_key',''),
+    '#size' => 70,
+    '#maxlength' => 100,
+    '#description' => t("The unique API key for this site."),
+    '#required' => TRUE,
+  );
+      
+
+  return system_settings_form($form);
+}
+
+/*
+Menu hook for this module
+*/
+
+function ymaps_menu() {
+
+  $items = array();
+
+  $items['admin/settings/ymaps'] = array(
+    'title' => 'Ymaps module settings',
+    'description' => 'Yandex maps base settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ymaps_admin'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+   );
+
+  return $items;
+}
+
+
+/*get locations for current node
+*/
+
+function ymaps_get_node_locations($node) {
+  if ($node->locations) {
+    $locs = array();
+        foreach ($node->locations as $loc) {
+          if (($loc['latitude'] || $loc['longitude']) && ($loc['latitude'] != 0 || $loc['longitude'] != 0)) {
+          $locs[] = array(
+          'latitude' => $loc['latitude'],
+          'longitude' => $loc['longitude'],
+          'locname' => $loc['name'],);  
+            }
+          }
+    }
+  return $locs;
+}
+
+/*get all needed info from node
+*@return nested array  
+*/
+function ymaps_get_node_markers($node, $ischild = FALSE) {
+  $markers = array();
+  $locs = ymaps_get_node_locations($node);
+  if (!empty($locs)) {
+    $markers['locs'] = $locs;
+    $markers['nid'] = $node->nid;
+    $markers['teaser'] = $node->teaser;
+    $markers['title'] = $node->title;
+    $markers['ischild'] = $ischild;
+    //checking whether taxonomy exists (for taxonomy markers)
+    if ($node->taxonomy) {
+      $markers['mainterm'] = current($node->taxonomy);
+    }
+    else
+    {
+      $markers['mainterm'] = '';
+    }
+    return $markers;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+
+//checking for child CCK nodes with locations
+function _ymaps_get_child_nodes($nid) {
+  $node = node_load($nid); 
+  //what nodereferencefielde exists (may be buggy - see http://api.audean.com/api/function/content_fields/API+Reference)
+  foreach (content_fields(NULL,$node->type) as $fname => $field) {
+    if ($field['type'] == 'nodereference' && !empty($node->$field['field_name'])) {
+      foreach ($node->$field['field_name'] as $curnode) {
+        if (!empty($curnode['nid']) && is_numeric($curnode['nid'])) {
+        $childs[] = $curnode['nid'];
+        }
+      }
+    }
+  }
+  return $childs;
+}
+
+function _ymaps_get_child_markers($nodeid, $mark_array = array()){
+  $child_nodes = _ymaps_get_child_nodes($nodeid);
+  if (!empty($child_nodes)) {
+    foreach ($child_nodes as $child) {
+      $chmark = ymaps_get_node_markers(node_load($child),TRUE);
+      if (!empty($chmark)){
+      $mark_array[] = $chmark;
+      }
+    }
+  }
+return $mark_array;
+}
+
+/*adding markers to a given y. map and show them all*/
+function ymaps_markers_show($mapid,$markers = array()) {
+if (count($markers) > 0) {
+    $marks = "
+    if (ymapsbound['$mapid'] == undefined) {
+    ymapsbound['$mapid'] = new YMaps.GeoCollectionBounds();//may be place of bug!!!!!!!!
+  }
+    ymapsgpoints['$mapid'] = new Array();
+    ymapspmarks['$mapid'] = new Array();
+    ";
+    
+    foreach ($markers as $mnode ) {
+    //common properties for node markers 
+    
+    $balcontent = "<h1>" . l($mnode['title'],"node/{$mnode['nid']}") . "</h1><br />" . $mnode['teaser'];
+    $marks .= "
+      balcontent['{$mnode['nid']}'] = " .drupal_to_js($balcontent). ";
+    ";
+    
+    
+    
+    $marks .= _ymaps_set_term_style($mnode['mainterm']);
+
+    if (!empty($mnode['locs'])) {
+      foreach ($mnode['locs'] as $marknum => $marker){
+        $marks .= "
+        ymapsgpoints['$mapid'][$marknum] = new YMaps.GeoPoint({$marker['longitude']},{$marker['latitude']});
+        ymapspmarks['$mapid'][$marknum] = new YMaps.Placemark(ymapsgpoints['$mapid'][$marknum],markoptions['$mapid']);
+        ymapspmarks['$mapid'][$marknum].setOptions({style: \"terms#{$mnode['mainterm']->tid}\"});
+        ymapsmap['$mapid'].addOverlay(ymapspmarks['$mapid'][$marknum]);
+        ymapsbound['$mapid'].add(ymapsgpoints['$mapid'][$marknum]);
+        ymapspmarks['$mapid'][$marknum].description = balcontent[{$mnode['nid']}];
+        
+        ";
+          if (!empty($marker['locname'])) {
+          $marks .= " ymapspmarks['$mapid'][$marknum].setHintContent('" . check_plain($marker['locname']) . "'); ";
+          }
+        }
+      }
+    }
+  $marks .= " ymapsmap['$mapid'].setBounds(ymapsbound['$mapid']);";
+  return $marks;
+    }
+    else {
+    return;
+    }
+}
+
+
+/*Check whether images for taxonomy exists
+*term is object
+*/
+function _ymaps_get_taxonomy_images($term) {
+  if (function_exists(taxonomy_image_get_object)){
+    if ($image = taxonomy_image_get_object($term->tid)) {
+      return $image;
+    }
+  }
+}
+
+
+function _ymaps_set_term_style($term) {
+  if ($image = _ymaps_get_taxonomy_images($term)) {
+  $out = "
+    iconstyles['{$term->tid}'] = new YMaps.Style();
+    iconstyles['{$term->tid}'].iconStyle = new YMaps.IconStyle();
+    iconstyles['{$term->tid}'].iconStyle.offset = new YMaps.Point(-5, -5);
+    iconstyles['{$term->tid}'].iconStyle.href = \"{$image->url}\";
+    //iconstyles['{$term->tid}'].iconStyle.size = new YMaps.Point(26, 46);
+    YMaps.Styles.add(\"terms#{$term->tid}\", iconstyles['{$term->tid}']);
+    ";
+  }
+return $out;
+}
+
+
+/** Adding Ymaps to the node editing forms
+*/
+function ymaps_form_alter(&$form, &$form_state, $form_id) {
+global $base_url;
+  if (isset($form['type']['#value']) && $form['type']['#value'] .'_node_form' == $form_id) {
+    // Add the Ymaps tags on the Node edit form
+    //print_r($form);die();
+    $node = $form['#node'];
+    //(we search location entries and adding DIVs with maps)    
+    $settings = variable_get('location_settings_node_'. $node->type, array());
+    if (isset($settings['multiple']['max']) && $settings['multiple']['max'] > 0) {
+      ymaps_doheader();
+      $path = drupal_get_path('module', 'ymaps') .'/js/';
+      drupal_add_js($path .'geocode_client.js');
+      foreach ($form['locations'] as $key => $ll) {
+         if (@is_numeric($key)) {
+           $form['locations'][$key]['access'] = array('#type' => 'markup', '#value' => "<div id=\"ymap-edit-$key\"></div>",);
+         }
+       }
+    }
+    //search for trackfield module fields and add map to it
+    //TODO admin settings for this
+    $trackfields = _ymaps_get_trackfields($form['type']['#value']);
+    if(!empty($trackfields)) {
+      ymaps_doheader(); 
+      $path = drupal_get_path('module', 'ymaps');
+      drupal_add_js($path  .'/js/' . 'draw_track.js');
+      //now we are using own parser for csv, so don't need above
+      //drupal_add_js($path .'jquery.csv.js');
+      foreach($trackfields as $tfield) {
+      if (!empty($form[$tfield])) {
+        foreach ($form[$tfield] as $key => $track) {
+          if (@is_numeric($key)) {
+          $form[$tfield][$key]['access'] = array('#type' => 'markup', '#value' => "<div id=\"ymap-edit-track-$tfield-$key\" style=\"height:300px\"></div>",);
+          //we apply map for latlon type of parsing only
+          //$form[$tfield][$key]['#default_value']['valuetype'] = 'latlon';
+          $tfname = str_replace('field_','',$tfield);
+          drupal_add_js("
+          
+          //style for tracks
+          var trstyle = new YMaps.Style();
+          lineStyle = new YMaps.LineStyle();
+          trstyle.iconStyle = new YMaps.IconStyle();
+          trstyle.iconStyle.offset = new YMaps.Point(-8,-8);
+          trstyle.iconStyle.href = \"$base_url/$path/img/trackmark.png\";
+          //trstyle.iconStyle.size = new YMaps.Point(26, 46);
+          lineStyle.strokeColor = \"c20b0b\";
+          lineStyle.strokeWidth = 2;
+          trstyle.lineStyle = lineStyle;
+          $(document).ready(function(){
+          initDrawTrack(\"$tfname\",$key); 
+          
+          mapShowHide('$tfname', '$key');
+          $(\"select[id*='edit-field'][id*='$tfname'][id*='$key']\").bind(\"change\", function(){
+          mapShowHide('$tfname', '$key');
+          });
+
+          });
+          ", 'inline', 'header', FALSE, FALSE, FALSE);
+          }
+        }
+        }
+      }
+    }
+  }
+}
+
+
+//checking for CCK trackfields for this type of node
+function _ymaps_get_trackfields($node_type) {
+  $trackfields = array();
+  foreach (content_fields(NULL,$node_type) as $fname => $field) {
+    if ($field['type'] == 'track' && $field['module'] == 'trackfield') {
+      $trackfields[] = $fname;
+    }
+  }
+  return $trackfields;
+}
+
+
+
+//get node tracks
+function ymaps_get_node_tracks ($node) {
+    
+  $result = db_query("SELECT settype, setdata, field_name, delta from {trackfield_datasets} WHERE vid = %d  and settype in ('latitude', 'longitude', 'distance')", $node->vid);
+  while ($sd = db_fetch_object($result)) {
+  $item[$sd->field_name][$sd->delta][$sd->settype] = split(',', $sd->setdata);
+  }
+  if ($item) {
+    foreach ($item as $subitem) {
+      foreach ($subitem as $track) {
+      //not the best way to set teasers in balloons
+        $track['nid'] = $node->vid;
+        $track['teaser'] = $node->teaser;
+        $track['title'] = $node->title;
+        $tracks[] = $track;
+
+      }
+    }
+    }
+  return $tracks;
+}
+
+
+//convert track array to Yandex line
+//returns string for yandex api
+function _ymaps_track_to_polyline ($track) {
+$linestring = '';
+if (isset($track) && array_key_exists('latitude', $track) && array_key_exists('longitude', $track)) {
+      $linestring = '[ ';
+      foreach ($track['latitude'] as $key => $value) {
+      $linestring .= "new YMaps.GeoPoint({$track['longitude'][$key]},{$track['latitude'][$key]}), ";
+      }
+      $linestring .= ']';
+      }
+  return $linestring;
+}
+
+
+//add tracks to map
+function ymaps_tracks_show ($mapid, $tracks = array()) {
+  if (count($tracks) > 0) {
+    $out = "
+    if (ymapsbound['$mapid'] == undefined) {
+    ymapsbound['$mapid'] = new YMaps.GeoCollectionBounds();//may be place of bug!!!!!!!!
+    }
+    ymapstracks['$mapid'] = new Array();
+    ";
+  
+    foreach ($tracks as $tracknum => $track ) {
+    $points = _ymaps_track_to_polyline ($track);
+    if (!$balloon[$track['nid']]) {
+      $balcontent = "<h1>" . l($track['title'],"node/{$track['nid']}") . "</h1><br />" . $track['teaser'];
+      $out .= "
+      balcontent[{$track['nid']}] = " .drupal_to_js($balcontent). ";
+      ";
+      $balloon[$track['nid']] = TRUE;
+    }
+    $out .= "
+    ymapstracks['$mapid'][$tracknum] = new YMaps.Polyline($points, {style: \"tracks#$mapid\"});
+    ymapstracks['$mapid'][$tracknum].setOptions(markoptions['$mapid']);
+    ymapstracks['$mapid'][$tracknum].description =  balcontent[{$track['nid']}];
+    ymapsmap['$mapid'].addOverlay(ymapstracks['$mapid'][$tracknum]);
+    ymapsbound['$mapid'].add($points); 
+    ";
+    $out .= "ymapstracks['$mapid'][$tracknum].setHintContent(" . drupal_to_js($track['title']) . ");";
+  
+    }
+    $out .= " ymapsmap['$mapid'].setBounds(ymapsbound['$mapid']);";
+    return $out;
+  }
+  else {
+    return;
+  }
+
+}
+
+
+/**
+* Implementation of hook_views_api().
+* @return Array with Views API version.
+*/
+function ymaps_views_api() {
+  return array('api' => 2.0);
+}
+
+//preprocess function for views
+// we probably don't need it
+function template_preprocess_ymaps_view_ymaps(&$vars) {
+  $view = $vars['view']; $vars['abaragabaha'] = "agrag";
+  //print('preprocess');
+  // Loop through the fields for this view.
+  foreach ($view->field as $id => $field) {
+    if (!empty($field->handler) && is_object($field->handler)) {
+      $object = new stdClass();
+      $object->content = $field->handler->theme($vars['row']);
+    if (isset($field->handler->field_alias) && isset($vars['row']->{$field->handler->field_alias})) {
+      $object->raw = $vars['row']->{$field->handler->field_alias};
+    }
+    else {
+      $object->raw = NULL; // make sure it exists to reduce NOTICE
+    }
+    if (!empty($vars['options']['separator']) && $object->content) {
+      $object->separator = filter_xss_admin($vars['options']['separator']);
+    }
+    $object->handler = $field->handler;
+    $object->class = views_css_safe($id);
+    $object->label = check_plain($field->handler->label());
+    $vars['fields'][$id] = $object;
+    }
+  }
+}

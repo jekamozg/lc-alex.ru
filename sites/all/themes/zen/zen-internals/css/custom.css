@@ -1,0 +1,225 @@
+/* 
+    Document   : custom
+    Created on : 23.10.2011, 21:50:42
+    Author     : jeka
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+/* 
+   TODO customize this sample style
+   Syntax recommendation http://www.w3.org/TR/REC-CSS2/
+*/
+/*global*/
+@font-face {
+    font-family: MarckScript; /* Имя шрифта */
+    src: url('../fonts/MarckScript-Regular.ttf'); /* Путь к файлу со шрифтом */
+}
+root { 
+    display: block;
+}
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: url('../images/main_bg.gif');
+    color: #939393;
+    text-shadow: black 0 0 0, #333 0px 0px 1px;
+}
+h1 {
+    text-shadow: black 0 0 0, #aaa 0px 0px 2px;
+    font-family: MarckScript;
+}
+a {
+    text-decoration: none;
+    color: #801E14;
+}
+a:hover, a:active {
+    text-decoration: none !important;
+}
+.messages {
+    clear: both;
+}
+#header {
+    border-bottom: 1px solid #484848;
+}
+#page-wrapper {
+    overflow: hidden;
+    width: 960px;
+    margin: 0 auto;
+}
+.logo-container {
+    padding-left: 6px;
+    font-family: MarckScript;
+    padding-top: 10px;
+    float: left;
+    width: 30%;
+}
+.logo-container #site-name {
+    font-size: 27px;
+}
+.logo-container #site-name a{
+    text-shadow: black 0 0 0, #fff 0px 0px 8px;
+    color: #ddd !important;
+}
+.logo-container #name-and-slogan{
+    padding-left: 80px;
+}
+.title{
+    float: left;
+}
+.yandex_share_buttons{
+    float: right;
+}
+.yandex_share_buttons .b-share > a{
+    padding: 7px 10px !important;
+    margin: 0 1px;
+    border: 1px solid #222;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+.yandex_share_buttons .b-share > a:hover{
+    background: #222;
+}
+.node-type-contacts.page-contact #content-area {
+    float: left;
+    clear: left;
+    width: 275px;
+}
+#block-ymaps-0 #ymaps-map-0 {
+    float: right;
+}
+.content-header{
+    float: left;
+    width: 100%;
+    border-bottom: 1px dotted #222;
+    margin-bottom: 5px;
+}
+.tabs{
+    clear: both;
+}
+#content-area{
+    clear: both;
+}
+.region-footer {
+
+}
+#navigation {
+    margin-left: 80px !important;
+    padding: 30px 0 0 0px !important;
+}
+#main-menu li {
+    padding: 0 !important;
+}
+#main-menu a {
+    font-size: 12px;
+    /*    font-weight: bold;*/
+    box-shadow: inset 0px 0px 1px black;
+    opacity: 0.5;
+    background-color: #333;
+    padding: 10px 20px;
+    color: #fff;
+}
+#main-menu a.active {
+    box-shadow: inset 0px 0px 15px black;
+}
+#main-menu a:active, #main-menu a:hover{
+    color: #ddd;
+    box-shadow: inset 0px 0px 6px #444;
+}
+p.clr, .clr {
+    clear: both;
+    padding: 0;
+    margin: 0;
+    background: none;
+}
+/*end global*/
+/*    footer*/
+.FBG {margin:0; padding:0; background: #111; border-top:1px solid #1e1e1e;}
+.FBG_resize { width:960px; margin:0 auto; padding:0;width: 960px;
+              margin: 0 auto;}
+.FBG_resize ul { margin:0; padding:0; list-style:none;}
+.FBG_resize li { padding:3px; margin:0; font: bold 11px Arial, Helvetica, sans-serif; color:#444;}
+.FBG_resize li a { font: normal 11px Arial, Helvetica, sans-serif; color:#444; text-decoration:none;}
+.FBG_resize li a:hover { color:#fff;}
+.FBG_resize img { float:left; margin:5px; padding:0;}
+.FBG_resize p { font: normal 11px Arial, Helvetica, sans-serif; color:#444; text-decoration:none; padding:5px; margin:0; line-height:1.8em;}
+.FBG_resize h2 { font: bold 14px Arial, Helvetica, sans-serif; color:#9f9f9f; padding:10px 5px; margin:0;}
+.FBG_resize .left { width:220px; float:left; margin:0; padding:10px;}
+
+.footer {padding:0;  margin:0; border-top:1px solid #1a1a1a; background:#0e0e0e;}
+.footer_resize { width:940px; margin:0 auto; padding:5px 10px; margin: 0 auto;}
+.footer p { font:normal 11px  Arial, Helvetica, sans-serif; color:#3e3e3e;}
+.footer a { font:bold 11px Arial, Helvetica, sans-serif; color:#3e3e3e; text-decoration:none; padding:5px; margin:0;}
+.footer p.right { text-align:right; width:350px; margin:0; padding:15px 0 0 0; float:right;} 
+.footer p.leftt { text-align:left; width:550px; margin:0; padding:15px 0 0 0; float:left;}
+/*end footer*/
+/*slideshow*/
+#slider {  width:960px; padding:20px 0 0 0; margin:0 auto;}
+div#slideshow { width: 100%; height:337px; padding:0; }
+.slider-item { width: 100% !important; }
+.slider-item img { float:right; margin:0; padding:0;}
+.slider_content_inner img { border: none; }
+.controls-center { width: 960px; margin:0 auto; padding:5px 0; background:#101010;}
+#slider_controls { margin:0 auto; z-index: 1000; width:960px;}
+#slider_controls h2 { width:600px; float:left; font: normal 11px Arial, Helvetica, sans-serif; color:#525252; padding:5px 0 0 20px; margin:0;}
+#slider_controls ul { margin:0; padding:0 20px 0 0; width:254px; float:right;}
+#slider_controls ul li { margin:0; padding:0 ; list-style: none; }
+#slider_controls ul li { float: right; display: block; }
+#slider_controls ul li a { width:17px; height: 8px; background:url('../images/tabs_2.gif') no-repeat center center; display: block; float: left; padding:10px 2px 0 2px; margin:2px !important; margin:1px 1px; outline: none; }
+#slider_controls ul li a:focus { outline: none; }
+#slider_controls ul li a:hover,
+#slider_controls ul li a.activeSlide { color:#979797; background:url('../images/tabs_1.gif') no-repeat center center; }
+/*end slideshow*/
+/*services*/
+.view-display-id-page_1 .views-field-title{
+    font-size: 16px;
+    font-weight: bold;
+    padding-left: 30px;
+    background: url('../images/tabs_1.gif') no-repeat 0 50%;
+}
+/*end services*/
+/*node news*/
+.field-field-news-photo {
+    float: left;
+    padding: 0 15px 15px 0;
+}
+/*end node news*/
+/*views news*/
+.view-display-id-page_1 .views-row{
+    clear: both;
+    float: left;
+    border-bottom: 1px solid #222;
+/*    margin-bottom: 15px;*/
+    padding: 10px;
+}
+.view-display-id-page_1 .views-row:hover{
+    background: rgba(3,3,3,0.1);
+    cursor: pointer;
+}
+.view-display-id-page_1 .views-field-field-news-photo-fid{
+    float: left;
+    padding: 0 15px 15px 0;
+}
+.view-display-id-page_1 .views-field-title{
+    float: left;
+}
+.view-display-id-page_1 .views-field-timestamp{
+    float: right;
+}
+.view-display-id-page_1 .views-field-body{
+    padding-top: 5px;
+    clear: right;
+}
+.view-display-id-block_1 ul {
+    /*    margin: 0 !important;*/
+    /*    padding: 0 !important;*/
+}
+.view-display-id-block_1 li {
+    padding: 3px !important;
+}
+/*end views news*/
+/*custom_lc module*/
+#block-custom_lc-0 ul {
+    margin: 0;
+}
+/*end custom_lc module*/
